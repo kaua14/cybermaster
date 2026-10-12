@@ -18,7 +18,8 @@ services:
       retries: 20
 
   migrate:
-    build: .
+    image: cybermaster:local
+    pull_policy: never
     command: ["node", "scripts/migrate.mjs"]
     environment:
       DATABASE_ADMIN_URL: postgres://cm_admin:${DB_ADMIN_PASSWORD}@db:5432/cybermaster
@@ -29,6 +30,7 @@ services:
 
   app:
     build: .
+    image: cybermaster:local
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
@@ -43,7 +45,8 @@ services:
 
   # Operação manual: docker compose run --rm ops scripts/set-master-password
   ops:
-    build: .
+    image: cybermaster:local
+    pull_policy: never
     profiles: ["ops"]
     entrypoint: []
     environment:

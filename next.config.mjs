@@ -1,8 +1,7 @@
-import type { NextConfig } from "next";
-
 const seguro = process.env.COOKIE_SECURE !== "0";
 
-const config: NextConfig = {
+/** @type {import("next").NextConfig} */
+const config = {
   poweredByHeader: false,
   serverExternalPackages: ["@node-rs/argon2", "@huggingface/transformers", "onnxruntime-node", "postgres"],
   async headers() {

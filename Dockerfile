@@ -15,7 +15,7 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/.next ./.next
-COPY next.config.ts server.mjs ./
+COPY next.config.mjs server.mjs ./
 COPY db ./db
 COPY scripts ./scripts
 RUN mkdir -p /app/storage && chown node:node /app/storage
