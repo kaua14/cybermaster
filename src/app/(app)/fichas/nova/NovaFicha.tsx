@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApi } from "@/components/Api";
 import { Fonte } from "@/components/Fonte";
 import { Painel } from "@/components/Painel";
-import { CINEMATOGRAFICO, FONTE_METODOS, METODOS, type Metodo } from "@/rules/atributos";
+import { FONTE_PONTOS_MESA, PONTOS_PERSONAGEM } from "@/rules/mesa";
 import { CLASSES, CLASSE_POR_ID } from "@/rules/classes";
 import { PERICIA_POR_ID } from "@/rules/pericias";
 
@@ -14,12 +14,9 @@ export function NovaFicha({ mestre, jogadores }: { mestre: boolean; jogadores: {
   const [nome, setNome] = useState("");
   const [classe, setClasse] = useState("");
   const [jogadorId, setJogadorId] = useState(jogadores[0]?.id ?? "");
-  const [metodo, setMetodo] = useState<Metodo>(mestre ? "cinematografico" : "aleatorio");
-  const [pontos, setPontos] = useState<string>(mestre ? "60" : "");
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
-  const metodos = (Object.keys(METODOS) as Metodo[]).filter((m) => mestre || !METODOS[m].soMestre);
   const c = CLASSE_POR_ID.get(classe);
 
   async function criar(e: React.FormEvent) {
@@ -29,8 +26,6 @@ export function NovaFicha({ mestre, jogadores }: { mestre: boolean; jogadores: {
     const r = await api<{ id: string }>("POST", "/api/fichas", {
       nome,
       classe,
-      metodo,
-      pontos: metodo === "rapido" ? null : Number(pontos) || null,
       ...(mestre ? { jogadorId } : {}),
     });
     setOcupado(false);
@@ -71,34 +66,10 @@ export function NovaFicha({ mestre, jogadores }: { mestre: boolean; jogadores: {
         </Painel>
 
         <Painel legenda="Atributos">
-          <fieldset style={{ border: 0 }}>
-            <legend className="rotulo" style={{ marginBottom: 8 }}>Método <Fonte fonte={FONTE_METODOS} /></legend>
-            {metodos.map((m) => (
-              <label key={m} className="linha" style={{ alignItems: "flex-start", textTransform: "none", letterSpacing: 0, font: "15px/1.45 var(--f-corpo)", color: "var(--texto)", marginBottom: 10, cursor: "pointer" }}>
-                <input type="radio" name="metodo" value={m} checked={metodo === m} style={{ width: 18, minHeight: 0, marginTop: 4 }}
-                  onChange={() => { setMetodo(m); setPontos(m === "cinematografico" ? "60" : ""); }} />
-                <span style={{ flex: 1 }}>
-                  <b style={{ color: "var(--tinta)" }}>{METODOS[m].nome}.</b> {METODOS[m].resumo}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          {metodo === "aleatorio" && (
-            <div className="campo">
-              <label htmlFor="n-pontos">Total dos 9d10 que você rolou</label>
-              <input id="n-pontos" type="number" min={18} max={90} value={pontos} onChange={(e) => setPontos(e.target.value)} required />
-              <p className="nota-pe" style={{ marginTop: 6 }}>Role os dados na mesa e anote o total. Cada atributo fica entre 2 e 10.</p>
-            </div>
-          )}
-          {metodo === "cinematografico" && (
-            <div className="campo">
-              <label htmlFor="n-pontos-c">Pontos de personagem</label>
-              <select id="n-pontos-c" value={pontos} onChange={(e) => setPontos(e.target.value)}>
-                {CINEMATOGRAFICO.map((x) => <option key={x.pontos} value={x.pontos}>{x.pontos}: {x.nome}</option>)}
-              </select>
-            </div>
-          )}
-          {metodo === "rapido" && <p className="nota-pe">Você digita os nove resultados direto nos atributos, na ficha.</p>}
+          <div className="terminal">
+            {PONTOS_PERSONAGEM} pontos para distribuir entre os nove atributos.{"\n"}Cada atributo vai de 2 a 10. Você distribui na ficha.
+          </div>
+          <p className="nota-pe" style={{ marginTop: 10 }}>Regra da mesa: todos os personagens têm {PONTOS_PERSONAGEM} pontos. <Fonte fonte={FONTE_PONTOS_MESA} /></p>
         </Painel>
       </div>
       <div className="linha espaco">

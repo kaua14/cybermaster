@@ -17,7 +17,7 @@ import { adminDb, chamar, clienteDe, criarJogadorAtivo, entrarComoMestre, novoIp
 const jogador = (mestre: Cliente, nome: string) => criarJogadorAtivo(criarJogador, aceitarConvite, mestre, nome);
 
 async function novaFicha(cliente: Cliente, extra: Record<string, unknown> = {}) {
-  const r = await chamar(criar, { corpo: { nome: "Raven", classe: "solo", metodo: "aleatorio", pontos: 50, ...extra }, cliente });
+  const r = await chamar(criar, { corpo: { nome: "Raven", classe: "solo", ...extra }, cliente });
   expect(r.status, JSON.stringify(r.dados)).toBe(201);
   return r.dados.id as string;
 }
@@ -94,13 +94,21 @@ describe("isolamento entre jogadores", () => {
 });
 
 describe("criação", () => {
-  it("jogador não usa o método cinematográfico", async () => {
+  it("toda ficha tem 75 pontos de personagem; nem jogador nem mestre mudam pela API", async () => {
     const mestre = await entrarComoMestre(login);
     const a = await jogador(mestre, "Alfa");
-    const r = await chamar(criar, { corpo: { nome: "X", classe: "solo", metodo: "cinematografico", pontos: 80 }, cliente: a.cliente });
-    expect(r.status).toBe(403);
-    const ok = await chamar(criar, { corpo: { nome: "X", classe: "solo", metodo: "cinematografico", pontos: 80, jogadorId: a.id }, cliente: mestre });
-    expect(ok.status).toBe(201);
+    const id = await novaFicha(a.cliente, { metodo: "aleatorio", pontos: 90 });
+    const f = await lerFicha(a.cliente, id);
+    expect(f.dados).toMatchObject({ metodo: "cinematografico", pontos: 75 });
+
+    for (const cliente of [a.cliente, mestre]) {
+      const atual = editavel(await lerFicha(cliente, id)) as ReturnType<typeof editavel> & { dados: { metodo: string; pontos: number } };
+      atual.dados.metodo = "rapido";
+      atual.dados.pontos = 90;
+      const s = await chamar(salvar, { metodo: "PUT", params: { id }, corpo: atual, cliente });
+      expect(s.status).toBe(200);
+      expect((await lerFicha(cliente, id)).dados).toMatchObject({ metodo: "cinematografico", pontos: 75 });
+    }
   });
 
   it("salvar com versão velha dá conflito", async () => {
@@ -126,14 +134,14 @@ describe("criação", () => {
     const a = await jogador(mestre, "Alfa");
     const id = await novaFicha(a.cliente);
     const f = editavel(await lerFicha(a.cliente, id)) as ReturnType<typeof editavel> & { dados: { atributos: Record<string, number> } };
-    for (const k of Object.keys(f.dados.atributos)) f.dados.atributos[k] = 7; // 63 > 50
+    for (const k of Object.keys(f.dados.atributos)) f.dados.atributos[k] = 9; // 81 > 75
     const s = await chamar(salvar, { metodo: "PUT", params: { id }, corpo: f, cliente: a.cliente });
     expect(s.status).toBe(200);
     const c = await chamar(concluir, { params: { id }, cliente: a.cliente });
     expect(c.status).toBe(400);
-    expect(c.dados.problemas.join()).toMatch(/63 de 50/);
+    expect(c.dados.problemas.join()).toMatch(/81 de 75/);
 
-    for (const k of Object.keys(f.dados.atributos)) f.dados.atributos[k] = 5; // 45 ≤ 50
+    for (const k of Object.keys(f.dados.atributos)) f.dados.atributos[k] = 8; // 72 ≤ 75
     f.version = s.dados.version;
     const s2 = await chamar(salvar, { metodo: "PUT", params: { id }, corpo: f, cliente: a.cliente });
     expect((await chamar(concluir, { params: { id }, cliente: a.cliente })).status).toBe(200);
@@ -143,7 +151,7 @@ describe("criação", () => {
     depois.dados.atributos.REF = 10;
     const s3 = await chamar(salvar, { metodo: "PUT", params: { id }, corpo: depois, cliente: a.cliente });
     expect(s3.status).toBe(200);
-    expect((await lerFicha(a.cliente, id)).dados.atributos.REF).toBe(5);
+    expect((await lerFicha(a.cliente, id)).dados.atributos.REF).toBe(8);
 
     // O mestre reabre e aí o jogador pode mexer.
     expect((await chamar(reabrir, { params: { id }, cliente: a.cliente })).status).toBe(403);

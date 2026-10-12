@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "@/components/Api";
 import { Fonte } from "@/components/Fonte";
 import { Painel } from "@/components/Painel";
-import { ATRIBUTOS, CINEMATOGRAFICO, FONTE_ATRIBUTOS, FONTE_METODOS, METODOS, SIGLAS, type Metodo, type Sigla } from "@/rules/atributos";
+import { ATRIBUTOS, FONTE_ATRIBUTOS, SIGLAS, type Sigla } from "@/rules/atributos";
 import { CLASSES, CLASSE_POR_ID } from "@/rules/classes";
 import { derivados } from "@/rules/derivados";
 import { atributosFeridos } from "@/rules/ferimentos";
 import { custoCyberware, resumo, type FichaEditavel, type PericiaFicha } from "@/rules/ficha";
+import { FONTE_PONTOS_MESA, PONTOS_PERSONAGEM } from "@/rules/mesa";
 import { PERICIA_POR_ID } from "@/rules/pericias";
 import { Pericias } from "./Pericias";
 import { Armadura, Armas, CyberwareLista, Ferimentos, Historico, type Registro } from "./Secoes";
@@ -121,9 +122,7 @@ export function Editor(props: Props) {
   const setAtributo = (s: Sigla, v: number) =>
     alterar((f) => ({ ...f, dados: { ...f.dados, atributos: { ...f.dados.atributos, [s]: Math.max(2, Math.min(10, Math.floor(v) || 2)) } } }));
 
-  const metodosPermitidos = (Object.keys(METODOS) as Metodo[]).filter((m) => props.mestre || !METODOS[m].soMestre || m === d.metodo);
-  const metodoTravado = travada || (!props.mestre && d.metodo === "cinematografico");
-  const restamAtr = r.atributos.total === null ? null : r.atributos.total - r.atributos.usados;
+  const restamAtr = PONTOS_PERSONAGEM - r.atributos.usados;
 
   return (
     <>
@@ -171,33 +170,7 @@ export function Editor(props: Props) {
               {CLASSES.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
           </div>
-          <div className="linha campo">
-            <div style={{ flex: 2, minWidth: 150 }}>
-              <label htmlFor="f-metodo">Método dos atributos</label>
-              <select id="f-metodo" value={d.metodo} disabled={metodoTravado}
-                onChange={(e) => {
-                  const m = e.target.value as Metodo;
-                  alterar((f) => ({ ...f, dados: { ...f.dados, metodo: m, pontos: m === "rapido" ? null : (f.dados.pontos ?? (m === "cinematografico" ? 60 : null)) } }));
-                }}>
-                {metodosPermitidos.map((m) => <option key={m} value={m}>{METODOS[m].nome}</option>)}
-              </select>
-            </div>
-            {d.metodo !== "rapido" && (
-              <div style={{ flex: 1, minWidth: 90 }}>
-                <label htmlFor="f-pontos">Pontos</label>
-                {d.metodo === "cinematografico" && props.mestre ? (
-                  <select id="f-pontos" value={d.pontos ?? 60} onChange={(e) => set("pontos", Number(e.target.value))}>
-                    {CINEMATOGRAFICO.map((x) => <option key={x.pontos} value={x.pontos}>{x.pontos}: {x.nome}</option>)}
-                    {!CINEMATOGRAFICO.some((x) => x.pontos === d.pontos) && d.pontos !== null && <option value={d.pontos}>{d.pontos}</option>}
-                  </select>
-                ) : (
-                  <input id="f-pontos" type="number" min={18} max={90} value={d.pontos ?? ""} disabled={metodoTravado}
-                    onChange={(e) => set("pontos", e.target.value === "" ? null : Math.max(18, Math.min(90, Math.floor(Number(e.target.value) || 18))))} />
-                )}
-              </div>
-            )}
-          </div>
-          <p className="nota-pe">{METODOS[d.metodo].resumo} <Fonte fonte={FONTE_METODOS} /></p>
+          <div className="dado-linha"><span>Pontos de personagem <Fonte fonte={FONTE_PONTOS_MESA} /></span><b>{PONTOS_PERSONAGEM}</b></div>
           {classe && (
             <>
               <div className="card-titulo">Habilidade especial</div>
@@ -209,11 +182,7 @@ export function Editor(props: Props) {
         <Painel legenda="Atributos">
           <div className="linha" style={{ justifyContent: "space-between", marginBottom: 10 }}>
             <Fonte fonte={FONTE_ATRIBUTOS} />
-            {restamAtr === null ? (
-              <span className="pontos neutro">Rápido: sem total</span>
-            ) : (
-              <span className={restamAtr < 0 ? "pontos estourou" : "pontos"}>Restam {restamAtr}</span>
-            )}
+            <span className={restamAtr < 0 ? "pontos estourou" : "pontos"}>Restam {restamAtr} de {PONTOS_PERSONAGEM}</span>
           </div>
           {SIGLAS.map((s) => {
             const ferido = (s === "REF" || s === "INT" || s === "AuCon") && feridos[s] !== d.atributos[s] ? feridos[s] : null;

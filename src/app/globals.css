@@ -136,6 +136,11 @@ input, select, textarea {
   padding: 6px 2px; outline: none; min-height: 40px;
   transition: background-color 0.15s;
 }
+select { color-scheme: dark; }
+/* lista aberta do select: sem isso alguns sistemas usam fundo claro com o texto claro da página */
+select option, select optgroup { background-color: var(--papel-2); color: var(--tinta); }
+select optgroup { color: var(--ocre); font-style: normal; }
+select option:disabled { color: var(--tinta-2); }
 input:focus, select:focus, textarea:focus {
   background-color: color-mix(in srgb, var(--ocre) 22%, transparent);
   border-bottom-width: 3px; padding-bottom: 4.5px;
@@ -161,8 +166,8 @@ input[aria-invalid="true"] { border-bottom-color: var(--vermelho); }
 
 /* ============ DADOS E MENSAGENS ============ */
 .dado-linha { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; font-size: 15px; }
-.dado-linha span { display: flex; flex: 1; align-items: baseline; gap: 6px; }
-.dado-linha span::after { content: ""; flex: 1; border-bottom: var(--fino) dotted var(--tinta-2); transform: translateY(-3px); }
+.dado-linha > span { display: flex; flex: 1; align-items: baseline; gap: 6px; }
+.dado-linha > span::after { content: ""; flex: 1; border-bottom: var(--fino) dotted var(--tinta-2); transform: translateY(-3px); }
 .dado-linha b { font: 500 15px var(--f-mono); color: var(--tinta); }
 .terminal { /* caixa de resultado, estilo terminal */
   background: #000; color: var(--ocre); border: var(--traco) solid var(--ocre);

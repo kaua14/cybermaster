@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CLASSE_POR_ID } from "@/rules/classes";
 import { dadosIniciais } from "@/rules/ficha";
+import { PONTOS_PERSONAGEM } from "@/rules/mesa";
 import { db } from "@/server/db";
 import { autorDe, registrar } from "@/server/fichas";
 import { json, rota, uuid } from "@/server/http";
@@ -20,25 +21,18 @@ export const GET = rota({ acesso: "logado" }, async ({ sessao, req }) => {
 const Corpo = z.object({
   nome: z.string().trim().min(1, "Dê um nome ao personagem.").max(60),
   classe: z.string().refine((c) => CLASSE_POR_ID.has(c), "Escolha a classe."),
-  metodo: z.enum(["aleatorio", "rapido", "cinematografico"]),
-  pontos: z.number().int().min(18).max(90).nullable(),
   /** Só o mestre escolhe o dono; o jogador cria para si. */
   jogadorId: uuid.optional(),
 });
 
 export const POST = rota({ acesso: "logado", corpo: Corpo }, async ({ sessao, corpo }) => {
-  if (sessao.tipo === "jogador" && corpo.metodo === "cinematografico") {
-    return json({ erro: "O método cinematográfico é só do mestre." }, 403);
-  }
   const dono = sessao.tipo === "mestre" ? corpo.jogadorId : sessao.jogadorId;
   if (!dono) return json({ erro: "Escolha o jogador dono da ficha." }, 400);
-  if (corpo.metodo === "rapido" && corpo.pontos !== null) return json({ erro: "O método rápido não usa total de pontos." }, 400);
-  if (corpo.metodo !== "rapido" && corpo.pontos === null) return json({ erro: "Informe o total de pontos de personagem." }, 400);
 
   const id = await db().begin(async (tx) => {
     const [p] = await tx`select id from player where id = ${dono}`;
     if (!p) return null;
-    const dados = dadosIniciais(corpo.metodo, corpo.pontos, corpo.classe);
+    const dados = dadosIniciais("cinematografico", PONTOS_PERSONAGEM, corpo.classe);
     const [c] = await tx`
       insert into character (owner_id, nome, classe, dados)
       values (${dono}, ${corpo.nome}, ${corpo.classe}, ${tx.json(dados as never)}) returning id`;

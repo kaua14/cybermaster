@@ -78,7 +78,7 @@ Nos dois casos o jogador sai de todas as sessões. O mestre nunca vê a senha qu
 
 ## Fichas
 
-- Criação pelos três métodos do livro (aleatório, rápido e cinematográfico, este só para o mestre). O app não rola dados: o jogador rola na mesa e digita o resultado.
+- **Regra da mesa: 75 pontos de personagem para todos**, distribuídos entre os nove atributos (2 a 10 cada). O valor fica em `src/rules/mesa.ts`; o servidor aplica em toda gravação, então ninguém muda pela ficha.
 - Contadores de pontos: atributos, 40 pontos de carreira nas Perícias Profissionais da classe e REF + INT pontos opcionais.
 - **Concluir criação** fixa atributos e pontos de perícia. Depois disso, o jogador só sobe perícias com PE. O mestre pode reabrir a criação.
 - **PE por perícia**, como no livro: o mestre dá PE na perícia usada (experiência, professor ou estudo até +2) e o jogador clica em **Subir** quando os PE acumulados pagam o próximo nível. Tudo vai para o histórico da ficha.

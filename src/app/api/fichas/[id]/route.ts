@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FichaEditavelSchema, travarCriacao } from "@/rules/ficha";
+import { comPontosDaMesa } from "@/rules/mesa";
 import { db } from "@/server/db";
 import { autorDe, carregarFicha, registrarEdicao, secoesAlteradas } from "@/server/fichas";
 import { json, rota } from "@/server/http";
@@ -18,13 +19,8 @@ export const PUT = rota({ acesso: "logado", corpo: Corpo }, async ({ sessao, par
     let depois = { nome: corpo.nome, classe: corpo.classe, dados: corpo.dados };
     // Jogador com criação concluída: atributos e pontos de perícia ficam como estão.
     if (sessao.tipo === "jogador" && f.criacaoConcluida) depois = travarCriacao(antes, depois);
-    // Só o mestre usa o método cinematográfico.
-    if (sessao.tipo === "jogador" && depois.dados.metodo !== antes.dados.metodo && depois.dados.metodo === "cinematografico") {
-      depois.dados = { ...depois.dados, metodo: antes.dados.metodo, pontos: antes.dados.pontos };
-    }
-    if (sessao.tipo === "jogador" && antes.dados.metodo === "cinematografico") {
-      depois.dados = { ...depois.dados, metodo: antes.dados.metodo, pontos: antes.dados.pontos };
-    }
+    // Total de pontos é regra da mesa: ninguém muda pela ficha.
+    depois.dados = comPontosDaMesa(depois.dados);
 
     const [n] = await tx`
       update character set nome = ${depois.nome}, classe = ${depois.classe}, dados = ${tx.json(depois.dados as never)},
