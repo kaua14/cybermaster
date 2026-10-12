@@ -11,6 +11,7 @@ import { atributosFeridos } from "@/rules/ferimentos";
 import { custoCyberware, resumo, type FichaEditavel, type PericiaFicha } from "@/rules/ficha";
 import { FONTE_PONTOS_MESA, PONTOS_PERSONAGEM } from "@/rules/mesa";
 import { PERICIA_POR_ID } from "@/rules/pericias";
+import { Pdf } from "./Pdf";
 import { Pericias } from "./Pericias";
 import { Armadura, Armas, CyberwareLista, Ferimentos, Historico, type Registro } from "./Secoes";
 import { useFicha } from "./useFicha";
@@ -31,7 +32,7 @@ export function Editor(props: Props) {
   const api = useApi();
   const router = useRouter();
   const url = `/api/fichas/${props.id}`;
-  const { ficha, alterar, estado, erro, salvarAgora, aplicarPericia, definirVersao } = useFicha(props.id, props.inicial, props.version);
+  const { ficha, alterar, estado, erro, salvarAgora, aplicarPericia, definirVersao, trocar } = useFicha(props.id, props.inicial, props.version);
   const [dano, setDano] = useState(props.dano);
   const [concluida, setConcluida] = useState(props.concluida);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string; lista?: string[] } | null>(null);
@@ -254,6 +255,19 @@ export function Editor(props: Props) {
           <textarea id="f-hist" value={d.historia} maxLength={8000} style={{ minHeight: 230 }} onChange={(e) => set("historia", e.target.value)}
             placeholder="Origem, família, amigos, inimigos, amores…" />
         </Painel>
+      </div>
+
+      <div className="espaco">
+        <Pdf
+          id={props.id}
+          salvarAgora={salvarAgora}
+          onAplicado={(r) => {
+            trocar(r.ficha);
+            definirVersao(r.version);
+            setDano(r.dano);
+            void carregarHistorico();
+          }}
+        />
       </div>
 
       <div className="espaco">

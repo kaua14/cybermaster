@@ -10,7 +10,7 @@ Hub para uma mesa de **Cyberpunk 2020** (edição Devir, PT-BR, 1996): fichas do
 |---|---|
 | 1. Esqueleto, banco, autenticação | pronta |
 | 2. Ficha na tela | pronta |
-| 3. PDF editável | a fazer |
+| 3. PDF editável | pronta |
 | 4. Regras, NPCs e ganchos | a fazer |
 | 5. Assistente | a fazer |
 | 6. Polimento | a fazer |
@@ -93,6 +93,17 @@ Nos dois casos o jogador sai de todas as sessões. O mestre nunca vê a senha qu
 - Login com limite por IP e por conta: a partir da 3ª falha seguida, a espera dobra a cada erro (1 s, 2 s, 4 s… até 15 min). A mesma mensagem vale para nome inexistente e senha errada.
 - Validação com zod em todas as rotas. Permissão conferida no servidor em todas as rotas.
 - CSP com nonce por requisição, `frame-ancestors 'none'`, `nosniff` e HSTS.
+
+## PDF da ficha
+
+Cada ficha tem um PDF A4 de uma página, preto e branco, com campos preenchíveis (AcroForm).
+
+- **Baixar PDF** e **Imprimir** (abre o PDF no navegador). O PDF fica guardado em `storage/fichas/` e é refeito alguns segundos depois de cada mudança na ficha, ou na hora do download se estiver velho. O banco continua sendo a fonte da verdade.
+- **Importar PDF editado**: o jogador edita o PDF num leitor (nome, idade, atributos, armas, armadura, cyberware, dinheiro, equipamento, história, caixas de dano) e envia de volta. O app mostra o que muda e só grava depois de **Aplicar mudanças**. Valem as mesmas regras da tela: com a criação concluída, mudança de atributo no PDF aparece como ignorada.
+- Perícias e derivados aparecem no PDF só para leitura: perícia sobe pelo app, com PE.
+- Segurança do upload: no máximo 2 MB, precisa começar com `%PDF-`, precisa ser um PDF gerado pelo app para aquela ficha. O servidor lê apenas os valores dos campos: scripts, anexos e o resto do arquivo são ignorados, e o arquivo enviado não é guardado.
+
+Com Docker, os PDFs ficam no volume `storage`.
 
 ## Desenvolvimento
 

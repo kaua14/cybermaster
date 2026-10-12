@@ -3,6 +3,7 @@ import { chavePericia, infoPericia } from "@/rules/ficha";
 import { db } from "@/server/db";
 import { autorDe, carregarFicha, registrar } from "@/server/fichas";
 import { json, rota } from "@/server/http";
+import { agendarPdf } from "@/server/pdf/armazenamento";
 
 const Corpo = z.object({ chave: z.string().min(1).max(60), complemento: z.string().trim().max(60).optional() });
 
@@ -26,5 +27,6 @@ export const POST = rota({ acesso: "logado", corpo: Corpo }, async ({ sessao, pa
     return { version: n.version as number, pericia: nova };
   });
   if ("erro" in r) return json({ erro: r.erro }, r.status);
+  agendarPdf(params.id);
   return json(r);
 });

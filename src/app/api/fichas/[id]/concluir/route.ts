@@ -2,6 +2,7 @@ import { resumo } from "@/rules/ficha";
 import { db } from "@/server/db";
 import { autorDe, carregarFicha, registrar } from "@/server/fichas";
 import { json, rota } from "@/server/http";
+import { agendarPdf } from "@/server/pdf/armazenamento";
 
 /** Fecha a criação: a partir daqui o jogador só sobe perícias com PE. */
 export const POST = rota({ acesso: "logado" }, async ({ sessao, params }) => {
@@ -15,5 +16,6 @@ export const POST = rota({ acesso: "logado" }, async ({ sessao, params }) => {
     return { ok: true };
   });
   if ("problemas" in r) return json({ erro: "Corrija antes de concluir.", problemas: r.problemas }, 400);
+  agendarPdf(params.id);
   return json(r);
 });

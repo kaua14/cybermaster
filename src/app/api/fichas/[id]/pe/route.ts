@@ -4,6 +4,7 @@ import { PERICIA_POR_ID } from "@/rules/pericias";
 import { db } from "@/server/db";
 import { carregarFicha, registrar } from "@/server/fichas";
 import { json, rota } from "@/server/http";
+import { agendarPdf } from "@/server/pdf/armazenamento";
 
 const MOTIVOS = { experiencia: "experiência", ensino: "professor", estudo: "estudo e prática" } as const;
 
@@ -36,5 +37,6 @@ export const POST = rota({ acesso: "mestre", corpo: Corpo }, async ({ sessao, pa
     return { version: n.version as number, pericia: pericias[i] };
   });
   if ("erro" in r) return json({ erro: r.erro }, 400);
+  agendarPdf(params.id);
   return json(r);
 });

@@ -1,5 +1,6 @@
 import type postgres from "postgres";
-import { DadosSchema, type FichaEditavel } from "@/rules/ficha";
+import { DadosSchema, travarCriacao, type FichaEditavel } from "@/rules/ficha";
+import { comPontosDaMesa } from "@/rules/mesa";
 import type { Sessao } from "./auth/session";
 import { db } from "./db";
 import { ErroHttp } from "./http";
@@ -14,18 +15,14 @@ export type FichaLinha = {
   dano: number;
   criacaoConcluida: boolean;
   atualizada: Date;
+  pdf: { caminho: string | null; chave: string | null };
 };
 
 type Exec = postgres.Sql | postgres.TransactionSql;
 
-/**
- * Carrega a ficha se a sessão pode vê-la: o mestre vê todas, o jogador só as próprias.
- * Ficha alheia responde 404, igual a ficha inexistente, para não revelar que existe.
- */
-export async function carregarFicha(sessao: Sessao, id: string, opcoes: { tx?: Exec; travar?: boolean } = {}): Promise<FichaLinha> {
+async function buscar(id: string, dono: string | null, opcoes: { tx?: Exec; travar?: boolean }): Promise<FichaLinha> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new ErroHttp(404, "Ficha não encontrada.");
   const q = opcoes.tx ?? db();
-  const dono = sessao.tipo === "mestre" ? null : sessao.jogadorId;
   const [r] = opcoes.travar
     ? await q`
         select c.*, p.name as dono_nome from character c join player p on p.id = c.owner_id
@@ -48,7 +45,57 @@ export async function carregarFicha(sessao: Sessao, id: string, opcoes: { tx?: E
     dano: r.dano,
     criacaoConcluida: r.criacao_concluida,
     atualizada: r.updated_at,
+    pdf: { caminho: r.pdf_path, chave: r.pdf_chave },
   };
+}
+
+/**
+ * Carrega a ficha se a sessão pode vê-la: o mestre vê todas, o jogador só as próprias.
+ * Ficha alheia responde 404, igual a ficha inexistente, para não revelar que existe.
+ */
+export function carregarFicha(sessao: Sessao, id: string, opcoes: { tx?: Exec; travar?: boolean } = {}): Promise<FichaLinha> {
+  return buscar(id, sessao.tipo === "mestre" ? null : sessao.jogadorId, opcoes);
+}
+
+/** Uso interno do servidor (gerar PDF em segundo plano). Nunca a partir de dados do cliente sem checar a sessão antes. */
+export function carregarFichaSistema(id: string): Promise<FichaLinha> {
+  return buscar(id, null, {});
+}
+
+/**
+ * Grava uma edição da ficha com as mesmas regras para a tela e para o PDF importado:
+ * total de pontos da mesa e, para jogador com criação concluída, atributos e pontos travados.
+ */
+export async function gravarFicha(
+  tx: postgres.TransactionSql,
+  sessao: Sessao,
+  f: FichaLinha,
+  enviada: FichaEditavel,
+  opcoes: { dano?: number; origem?: "tela" | "pdf" } = {},
+): Promise<{ version: number; ficha: FichaEditavel; dano: number }> {
+  const antes = { nome: f.nome, classe: f.classe, dados: f.dados };
+  const depois = permitida(sessao, f, enviada);
+  const dano = opcoes.dano ?? f.dano;
+  const [n] = await tx`
+    update character set nome = ${depois.nome}, classe = ${depois.classe}, dados = ${tx.json(depois.dados as never)},
+      dano = ${dano}, version = version + 1, updated_at = now()
+    where id = ${f.id} returning version`;
+  const secoes = secoesAlteradas(antes, depois);
+  if (dano !== f.dano) secoes.push("dano");
+  if (opcoes.origem === "pdf") {
+    await registrar(tx, f.id, autorDe(sessao), "pdf", secoes.length ? `Importou o PDF: ${secoes.join(", ")}.` : "Importou o PDF sem mudanças.");
+  } else if (f.criacaoConcluida) {
+    await registrarEdicao(tx, f.id, autorDe(sessao), secoes);
+  }
+  return { version: n.version as number, ficha: depois, dano };
+}
+
+/** O que a sessão pode de fato gravar a partir de uma ficha enviada. */
+export function permitida(sessao: Sessao, f: FichaLinha, enviada: FichaEditavel): FichaEditavel {
+  const antes = { nome: f.nome, classe: f.classe, dados: f.dados };
+  let depois = enviada;
+  if (sessao.tipo === "jogador" && f.criacaoConcluida) depois = travarCriacao(antes, depois);
+  return { ...depois, dados: comPontosDaMesa(depois.dados) };
 }
 
 export const autorDe = (s: Sessao) => (s.tipo === "mestre" ? "Mestre" : s.nome);

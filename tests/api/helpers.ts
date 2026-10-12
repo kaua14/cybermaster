@@ -18,9 +18,9 @@ export type Cliente = { cookie?: string; csrf?: string; ip: string };
 
 export async function chamar(
   handler: Handler,
-  opts: { metodo?: string; corpo?: unknown; cliente?: Cliente; params?: Record<string, string>; origem?: string | null; csrf?: string; query?: string },
+  opts: { metodo?: string; corpo?: unknown; bruto?: Uint8Array; tipo?: string; cliente?: Cliente; params?: Record<string, string>; origem?: string | null; csrf?: string; query?: string },
 ) {
-  const cabecalhos: Record<string, string> = { host: "cm.test", "content-type": "application/json", "x-cm-client-ip": opts.cliente?.ip ?? "127.0.0.1" };
+  const cabecalhos: Record<string, string> = { host: "cm.test", "content-type": opts.tipo ?? "application/json", "x-cm-client-ip": opts.cliente?.ip ?? "127.0.0.1" };
   if (opts.origem !== null) cabecalhos.origin = opts.origem ?? ORIGEM;
   if (opts.cliente?.cookie) cabecalhos.cookie = opts.cliente.cookie;
   const csrf = opts.csrf ?? opts.cliente?.csrf;
@@ -28,11 +28,15 @@ export async function chamar(
   const req = new Request(`${ORIGEM}/api/teste${opts.query ? `?${opts.query}` : ""}`, {
     method: opts.metodo ?? "POST",
     headers: cabecalhos,
-    body: opts.corpo === undefined ? undefined : JSON.stringify(opts.corpo),
+    body: opts.bruto ? Buffer.from(opts.bruto) : opts.corpo === undefined ? undefined : JSON.stringify(opts.corpo),
   });
   const res = await handler(req, { params: Promise.resolve(opts.params ?? {}) });
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/pdf")) {
+    return { status: res.status, dados: {} as Record<string, never>, bytes: new Uint8Array(await res.arrayBuffer()), headers: res.headers, setCookie: null };
+  }
   const dados = await res.json().catch(() => ({}));
-  return { status: res.status, dados, setCookie: res.headers.get("set-cookie") };
+  return { status: res.status, dados, setCookie: res.headers.get("set-cookie"), headers: res.headers, bytes: undefined };
 }
 
 /** Extrai o cookie de sessão e busca o token CSRF dessa sessão. */

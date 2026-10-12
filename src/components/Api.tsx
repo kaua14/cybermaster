@@ -7,6 +7,9 @@ export function CsrfProvider({ token, children }: { token: string; children: Rea
   return <CsrfCtx.Provider value={token}>{children}</CsrfCtx.Provider>;
 }
 
+/** Token CSRF da sessão, para envios que não são JSON (arquivo). */
+export const useCsrf = () => useContext(CsrfCtx);
+
 export type Resposta<T> = { ok: true; dados: T } | { ok: false; erro: string; status: number };
 
 /** fetch para a API da app: JSON, mesma origem e token CSRF. */

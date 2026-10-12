@@ -5,6 +5,7 @@ import { PONTOS_PERSONAGEM } from "@/rules/mesa";
 import { db } from "@/server/db";
 import { autorDe, registrar } from "@/server/fichas";
 import { json, rota, uuid } from "@/server/http";
+import { agendarPdf } from "@/server/pdf/armazenamento";
 
 export const GET = rota({ acesso: "logado" }, async ({ sessao, req }) => {
   const filtro = new URL(req.url).searchParams.get("jogador");
@@ -40,5 +41,6 @@ export const POST = rota({ acesso: "logado", corpo: Corpo }, async ({ sessao, co
     return c.id as string;
   });
   if (!id) return json({ erro: "Jogador não encontrado." }, 404);
+  agendarPdf(id, 0);
   return json({ id }, 201);
 });
