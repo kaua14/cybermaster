@@ -17,8 +17,12 @@ export function json(dados: unknown, status = 200, cabecalhos: Record<string, st
 
 const confiaProxy = () => process.env.TRUST_PROXY === "1";
 
-/** IP do cliente. O server.mjs sobrescreve este cabeçalho em toda requisição. */
-export const ipCliente = (req: Request) => req.headers.get("x-cm-client-ip") || "desconhecido";
+/**
+ * IP do cliente. No servidor próprio, o server.mjs sobrescreve x-cm-client-ip em toda requisição.
+ * Na Vercel o server.mjs não roda: aí vale o x-real-ip, que a própria Vercel define (o cliente não consegue forjá-lo).
+ */
+export const ipCliente = (req: Request) =>
+  (process.env.VERCEL === "1" ? req.headers.get("x-real-ip") : req.headers.get("x-cm-client-ip")) || "desconhecido";
 
 function mesmaOrigem(req: Request): boolean {
   const host = (confiaProxy() && req.headers.get("x-forwarded-host")) || req.headers.get("host");

@@ -81,6 +81,24 @@ describe("download do PDF", () => {
     await chamar(apagar, { metodo: "DELETE", params: { id }, cliente: a.cliente });
     expect(existsSync(path.join(process.env.STORAGE_DIR!, linha.pdf_path))).toBe(false);
   });
+
+  it("sem disco (Vercel): gera na hora, não grava nada e continua exigindo permissão", async () => {
+    process.env.VERCEL = "1";
+    try {
+      const mestre = await entrarComoMestre(login);
+      const a = await jogador(mestre, "Alfa");
+      const b = await jogador(mestre, "Beta");
+      const id = await novaFicha(a.cliente, "Sem Disco");
+      const doc = await PDFDocument.load(await pdf(a.cliente, id));
+      expect(doc.getForm().getTextField(CAMPO.nome).getText()).toBe("Sem Disco");
+      const [linha] = await adminDb()`select pdf_path, pdf_chave from character where id = ${id}`;
+      expect(linha).toEqual({ pdf_path: null, pdf_chave: null });
+      expect(existsSync(path.join(process.env.STORAGE_DIR!, "fichas", `${id}.pdf`))).toBe(false);
+      expect((await chamar(baixar, { metodo: "GET", params: { id }, cliente: b.cliente })).status).toBe(404);
+    } finally {
+      delete process.env.VERCEL;
+    }
+  });
 });
 
 describe("importar PDF", () => {

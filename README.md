@@ -36,6 +36,39 @@ O cookie de sessão sai com `Secure`, então o navegador só o guarda em HTTPS (
 
 Para jogar só na rede local sem TLS, dá para definir `COOKIE_SECURE=0`. Nesse caso a sessão trafega sem criptografia.
 
+## Publicar na Vercel (grátis)
+
+A Vercel roda o Next; o banco fica num Postgres gratuito da [Neon](https://neon.tech) (região São Paulo, `aws-sa-east-1`). A função da Vercel está fixada em São Paulo (`gru1`, em `vercel.json`) para ficar perto do banco.
+
+Diferenças em relação ao servidor próprio, ligadas sozinhas quando `VERCEL=1` (a Vercel define):
+
+- O `server.mjs` não roda. O IP do limite de tentativas vem do `x-real-ip`, que a Vercel define e o cliente não consegue forjar.
+- Não há disco permanente: o PDF da ficha é gerado na hora de cada download e não é guardado. A permissão é conferida do mesmo jeito.
+- Poucas conexões com o banco por instância.
+
+Passo a passo:
+
+1. Crie um projeto na Neon e copie a connection string do papel dono (`neondb_owner`), **sem** `-pooler` no host. Guarde num arquivo local que não vai para o git nem para a Vercel:
+   ```sh
+   echo 'DATABASE_ADMIN_URL=postgres://neondb_owner:...@ep-xxx.sa-east-1.aws.neon.tech/neondb?sslmode=require' > .env.producao
+   ```
+2. Crie as tabelas e o papel `cm_app` (só `SELECT` na senha do mestre), com uma senha nova para ele:
+   ```sh
+   set -a; . ./.env.producao; set +a
+   export DB_APP_PASSWORD=$(openssl rand -hex 24)
+   npm run db:migrate
+   ```
+3. Grave a senha do mestre (prompt oculto):
+   ```sh
+   scripts/set-master-password
+   ```
+4. Na Vercel, defina **só** `DATABASE_URL`, com o papel `cm_app` e o host com `-pooler`:
+   `postgres://cm_app:<DB_APP_PASSWORD>@ep-xxx-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require`.
+   A credencial do `neondb_owner` nunca vai para a Vercel.
+5. Publique: `npx vercel deploy --prod`.
+
+O banco novo começa vazio, só com a senha do mestre. Os jogadores entram por convite, como no servidor próprio.
+
 ## Senha do mestre
 
 Existe uma única senha de mestre. Ela **não está** no código, no `.env` nem em nenhum arquivo do repositório. Quem administra o servidor a grava direto no banco com o script `scripts/set-master-password`, que:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { atraso } from "@/server/auth/throttle";
+import { ipCliente } from "@/server/http";
 import { gerarCodigoConvite, iguais, normalizarCodigo } from "@/server/auth/tokens";
 import { cookieApagado, cookieSessao, tokenDoCookie } from "@/server/auth/session";
 
@@ -39,5 +40,20 @@ describe("comparação de tokens", () => {
     expect(iguais("abc", "abc")).toBe(true);
     expect(iguais("abc", "abd")).toBe(false);
     expect(iguais("abc", "abcd")).toBe(false);
+  });
+});
+
+describe("IP do cliente", () => {
+  const req = (h: Record<string, string>) => new Request("http://cm.test/", { headers: h });
+  it("servidor próprio: usa o cabeçalho que o server.mjs sobrescreve", () => {
+    expect(ipCliente(req({ "x-cm-client-ip": "10.0.0.1", "x-real-ip": "1.2.3.4" }))).toBe("10.0.0.1");
+  });
+  it("Vercel: ignora x-cm-client-ip forjado e usa o x-real-ip da Vercel", () => {
+    process.env.VERCEL = "1";
+    try {
+      expect(ipCliente(req({ "x-cm-client-ip": "forjado", "x-real-ip": "1.2.3.4" }))).toBe("1.2.3.4");
+    } finally {
+      delete process.env.VERCEL;
+    }
   });
 });

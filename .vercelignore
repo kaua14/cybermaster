@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+storage
+models
+tests
+test-results
+playwright-report
+coverage

@@ -11,6 +11,13 @@ const relativo = (id: string) => path.posix.join("fichas", `${id}.pdf`);
 const absoluto = (id: string) => path.join(pasta(), `${id}.pdf`);
 const chaveDe = (f: FichaLinha) => `${f.version}:${f.dano}`;
 
+/**
+ * Na Vercel não há disco permanente nem processo que fique de pé depois da resposta:
+ * o PDF é gerado na hora de cada download (leva milissegundos) e não é guardado.
+ * PDF_EM_DISCO=0 força esse modo em outro lugar.
+ */
+const emDisco = () => process.env.PDF_EM_DISCO !== "0" && process.env.VERCEL !== "1";
+
 const emAndamento = new Map<string, Promise<Uint8Array>>();
 
 /** Gera e grava. Pedidos simultâneos para a mesma versão da ficha esperam a mesma geração. */
@@ -24,8 +31,11 @@ function gerarEGuardar(f: FichaLinha): Promise<Uint8Array> {
   return p;
 }
 
+const gerarPdfDe = (f: FichaLinha) =>
+  gerarPdf({ id: f.id, version: f.version, ficha: { nome: f.nome, classe: f.classe, dados: f.dados }, dano: f.dano, dono: f.dono.nome, geradoEm: new Date() });
+
 async function gerarAgora(f: FichaLinha): Promise<Uint8Array> {
-  const bytes = await gerarPdf({ id: f.id, version: f.version, ficha: { nome: f.nome, classe: f.classe, dados: f.dados }, dano: f.dano, dono: f.dono.nome, geradoEm: new Date() });
+  const bytes = await gerarPdfDe(f);
   await mkdir(pasta(), { recursive: true });
   const tmp = `${absoluto(f.id)}.${randomUUID()}.tmp`;
   await writeFile(tmp, bytes);
@@ -38,6 +48,7 @@ async function gerarAgora(f: FichaLinha): Promise<Uint8Array> {
 
 /** PDF da ficha. A autorização vem de quem chamou (a ficha já foi carregada com a sessão). */
 export async function pdfDaFicha(f: FichaLinha): Promise<Uint8Array> {
+  if (!emDisco()) return gerarPdfDe(f);
   if (f.pdf.caminho && f.pdf.chave === chaveDe(f)) {
     try {
       return await readFile(absoluto(f.id));
@@ -52,6 +63,7 @@ const agendados = new Map<string, ReturnType<typeof setTimeout>>();
 
 /** Regenera o PDF guardado pouco depois de uma mudança (agrupa edições seguidas). */
 export function agendarPdf(id: string, atrasoMs = 3000) {
+  if (!emDisco()) return;
   clearTimeout(agendados.get(id));
   agendados.set(
     id,
@@ -69,6 +81,7 @@ export function agendarPdf(id: string, atrasoMs = 3000) {
 }
 
 export async function apagarPdf(f: Pick<FichaLinha, "id">) {
+  if (!emDisco()) return;
   clearTimeout(agendados.get(f.id));
   agendados.delete(f.id);
   await rm(absoluto(f.id), { force: true });
