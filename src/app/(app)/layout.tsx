@@ -9,9 +9,20 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Cada página confere a sessão de novo; aqui só monta a moldura.
   const s = await exigirSessao({ permitirTrocaPendente: true });
-  const itens = s.trocarSenha ? [] : [{ href: "/", rotulo: "Fichas" }];
-  if (s.tipo === "mestre") itens.push({ href: "/jogadores", rotulo: "Jogadores" });
-  itens.push({ href: "/conta", rotulo: "Conta" });
+  const itens = s.trocarSenha
+    ? [{ href: "/conta", rotulo: "Conta" }]
+    : [
+        { href: "/", rotulo: "Fichas" },
+        { href: "/regras", rotulo: "Regras" },
+        ...(s.tipo === "mestre"
+          ? [
+              { href: "/npcs", rotulo: "NPCs" },
+              { href: "/notas", rotulo: "Notas" },
+              { href: "/jogadores", rotulo: "Jogadores" },
+            ]
+          : []),
+        { href: "/conta", rotulo: "Conta" },
+      ];
 
   return (
     <CsrfProvider token={s.csrf}>

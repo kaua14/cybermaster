@@ -9,7 +9,7 @@ export default async function Conta() {
   const s = await exigirSessao({ permitirTrocaPendente: true });
   return (
     <>
-      <Titulo numero={s.tipo === "mestre" ? "03" : "02"}>Conta</Titulo>
+      <Titulo numero={s.tipo === "mestre" ? "06" : "03"}>Conta</Titulo>
       {s.tipo === "jogador" ? (
         <TrocarSenha temporaria={s.trocarSenha} />
       ) : (

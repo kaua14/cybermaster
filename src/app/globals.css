@@ -281,6 +281,46 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; background: v
 .problemas { margin: 10px 0 0 18px; color: var(--texto); font-size: 15px; }
 .problemas li::marker { color: var(--vermelho); }
 
+
+/* ============ ACORDEÃO (regras) ============ */
+details.regra { border-top: var(--traco) solid var(--linha); }
+details.regra:last-of-type { border-bottom: var(--traco) solid var(--linha); }
+details.regra > summary {
+  cursor: pointer; list-style: none; padding: 14px 4px; min-height: 44px;
+  font: 600 13px/1.3 var(--f-titulo); letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta);
+  display: flex; align-items: center; gap: 14px; transition: background-color 0.15s;
+}
+details.regra > summary::-webkit-details-marker { display: none; }
+details.regra > summary::before {
+  content: "+"; flex: 0 0 20px; display: inline-grid; place-items: center; width: 20px; height: 20px;
+  border: var(--traco) solid var(--linha); font: 500 14px/1 var(--f-mono);
+}
+details.regra[open] > summary::before { content: "\2212"; background: var(--ocre); color: #0a0a0a; }
+details.regra > summary:hover { background: var(--papel-2); }
+details.regra > summary .pag { margin-left: auto; letter-spacing: 0.06em; text-transform: none; font-weight: 400; }
+.corpo { padding: 4px 4px 22px 38px; font-size: 15.5px; max-width: 74ch; color: var(--texto); }
+.corpo ul { margin: 8px 0 8px 18px; }
+.corpo li { margin-bottom: 6px; }
+.corpo li::marker { color: var(--ocre); }
+.corpo table { font-size: 14.5px; }
+.grupo-regras + .grupo-regras { margin-top: 34px; }
+.grupo-regras > h2 { font: 500 11px/1.4 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--tinta-2); margin-bottom: 8px; }
+
+
+/* ============ NOTAS ============ */
+.grid-notas { display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 26px; align-items: start; }
+.grid-notas .card + .card { margin-top: 0; }
+.lista-notas { list-style: none; margin-top: 16px; }
+.lista-notas li + li { border-top: var(--fino) dotted var(--tinta-2); }
+.lista-notas button {
+  width: 100%; text-align: left; background: none; border: 0; cursor: pointer; color: var(--tinta);
+  padding: 10px 6px; min-height: 44px; display: flex; flex-direction: column; gap: 2px;
+  font: 15px/1.3 var(--f-corpo); transition: background-color 0.15s;
+}
+.lista-notas button small { font: 10.5px var(--f-mono); color: var(--tinta-2); }
+.lista-notas button:hover, .lista-notas button.ativa { background: var(--papel-3); }
+.lista-notas button.ativa span { color: var(--ocre); }
+
 /* ============ RESPONSIVO ============ */
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
@@ -299,6 +339,8 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; background: v
   .trilha .grupo .rotulo { flex: 0 0 118px; margin: 0; }
   .trilha button { flex: 0 0 40px; }
   .historico li { grid-template-columns: 1fr; gap: 2px; }
+  .corpo { padding-left: 8px; }
+  .grid-notas { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

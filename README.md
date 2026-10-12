@@ -11,7 +11,7 @@ Hub para uma mesa de **Cyberpunk 2020** (edição Devir, PT-BR, 1996): fichas do
 | 1. Esqueleto, banco, autenticação | pronta |
 | 2. Ficha na tela | pronta |
 | 3. PDF editável | pronta |
-| 4. Regras, NPCs e ganchos | a fazer |
+| 4. Regras, NPCs e ganchos | pronta |
 | 5. Assistente | a fazer |
 | 6. Polimento | a fazer |
 
@@ -104,6 +104,12 @@ Cada ficha tem um PDF A4 de uma página, preto e branco, com campos preenchívei
 - Segurança do upload: no máximo 2 MB, precisa começar com `%PDF-`, precisa ser um PDF gerado pelo app para aquela ficha. O servidor lê apenas os valores dos campos: scripts, anexos e o resto do arquivo são ignorados, e o arquivo enviado não é guardado.
 
 Com Docker, os PDFs ficam no volume `storage`.
+
+## Regras, NPCs e notas
+
+- **Regras** (todos): cola em acordeão, com busca. O conteúdo vem de `src/rules/base.ts`, um registro por regra com resumo próprio, valores, página do livro e palavras-chave. O assistente (etapa 5) usa a mesma base. O que não deu para confirmar no livro aparece com "conferir" e uma nota dizendo o quê.
+- **NPCs e ganchos** (mestre): NPC instantâneo de rua, gangue ou corporativo e gerador de ganchos de cena. Dá para guardar o resultado nas notas. As tabelas ficam em `src/rules/geradores.ts`.
+- **Notas** (mestre): notas da campanha no banco, com salvamento automático.
 
 ## Desenvolvimento
 

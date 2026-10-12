@@ -8,7 +8,7 @@ export default async function Pagina() {
   await exigirMestre();
   return (
     <>
-      <Titulo numero="02" desc="Convide cada jogador pelo nome. Ele recebe um código e cria a própria senha. Você nunca vê a senha de ninguém.">
+      <Titulo numero="05" desc="Convide cada jogador pelo nome. Ele recebe um código e cria a própria senha. Você nunca vê a senha de ninguém.">
         Jogadores
       </Titulo>
       <Jogadores />
