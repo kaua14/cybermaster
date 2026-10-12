@@ -1,0 +1,56 @@
+# Três papéis no banco:
+#  - cm_admin (dono, superusuário do container): migrações e senha do mestre. Só os serviços
+#    "migrate" e "ops" recebem essa credencial.
+#  - cm_app: o que a aplicação usa. Só tem SELECT em master_credential.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cm_admin
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?defina DB_ADMIN_PASSWORD no .env}
+      POSTGRES_DB: cybermaster
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cm_admin -d cybermaster"]
+      interval: 5s
+      retries: 20
+
+  migrate:
+    build: .
+    command: ["node", "scripts/migrate.mjs"]
+    environment:
+      DATABASE_ADMIN_URL: postgres://cm_admin:${DB_ADMIN_PASSWORD}@db:5432/cybermaster
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?defina DB_APP_PASSWORD no .env}
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://cm_app:${DB_APP_PASSWORD}@db:5432/cybermaster
+      COOKIE_SECURE: ${COOKIE_SECURE:-1}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  # Operação manual: docker compose run --rm ops scripts/set-master-password
+  ops:
+    build: .
+    profiles: ["ops"]
+    entrypoint: []
+    environment:
+      DATABASE_ADMIN_URL: postgres://cm_admin:${DB_ADMIN_PASSWORD}@db:5432/cybermaster
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  dbdata:
+  storage:
