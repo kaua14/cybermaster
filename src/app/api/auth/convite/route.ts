@@ -24,7 +24,7 @@ export const POST = rota({ acesso: "publico", corpo: Corpo }, async ({ corpo, ip
       where code_hash = ${sha256(normalizarCodigo(corpo.codigo))} and used_at is null and expires_at > now()
       returning player_id`;
     if (!c) return null;
-    const [p] = await tx`update player set password_hash = ${senhaHash} where id = ${c.player_id} returning id, name`;
+    const [p] = await tx`update player set password_hash = ${senhaHash}, must_change_password = false, password_expires_at = null where id = ${c.player_id} returning id, name`;
     await tx`delete from session where player_id = ${c.player_id}`;
     return p;
   });

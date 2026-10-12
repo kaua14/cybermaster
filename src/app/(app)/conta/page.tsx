@@ -6,12 +6,12 @@ import { TrocarSenha } from "./TrocarSenha";
 export const metadata = { title: "Conta" };
 
 export default async function Conta() {
-  const s = await exigirSessao();
+  const s = await exigirSessao({ permitirTrocaPendente: true });
   return (
     <>
       <Titulo numero={s.tipo === "mestre" ? "03" : "02"}>Conta</Titulo>
       {s.tipo === "jogador" ? (
-        <TrocarSenha />
+        <TrocarSenha temporaria={s.trocarSenha} />
       ) : (
         <Painel legenda="Senha do mestre">
           <p>A senha do mestre não se troca por aqui. Quem administra o servidor roda o script <code>scripts/set-master-password</code> (veja o README).</p>

@@ -18,14 +18,14 @@ export type Cliente = { cookie?: string; csrf?: string; ip: string };
 
 export async function chamar(
   handler: Handler,
-  opts: { metodo?: string; corpo?: unknown; cliente?: Cliente; params?: Record<string, string>; origem?: string | null; csrf?: string },
+  opts: { metodo?: string; corpo?: unknown; cliente?: Cliente; params?: Record<string, string>; origem?: string | null; csrf?: string; query?: string },
 ) {
   const cabecalhos: Record<string, string> = { host: "cm.test", "content-type": "application/json", "x-cm-client-ip": opts.cliente?.ip ?? "127.0.0.1" };
   if (opts.origem !== null) cabecalhos.origin = opts.origem ?? ORIGEM;
   if (opts.cliente?.cookie) cabecalhos.cookie = opts.cliente.cookie;
   const csrf = opts.csrf ?? opts.cliente?.csrf;
   if (csrf) cabecalhos["x-csrf-token"] = csrf;
-  const req = new Request(`${ORIGEM}/api/teste`, {
+  const req = new Request(`${ORIGEM}/api/teste${opts.query ? `?${opts.query}` : ""}`, {
     method: opts.metodo ?? "POST",
     headers: cabecalhos,
     body: opts.corpo === undefined ? undefined : JSON.stringify(opts.corpo),
@@ -52,4 +52,25 @@ export async function definirSenhaMestre(): Promise<string> {
   await adminDb()`insert into master_credential (id, password_hash) values (1, ${h})
                   on conflict (id) do update set password_hash = excluded.password_hash`;
   return senha;
+}
+
+type Rota = Handler;
+
+/** Entra como mestre com uma senha gerada na hora. */
+export async function entrarComoMestre(login: Rota): Promise<Cliente> {
+  const senha = await definirSenhaMestre();
+  const ip = novoIp();
+  const r = await chamar(login, { corpo: { modo: "mestre", senha }, cliente: { ip } });
+  if (r.status !== 200) throw new Error(`login do mestre: ${r.status}`);
+  return clienteDe(r.setCookie, ip);
+}
+
+/** Convida um jogador e faz o primeiro acesso dele. */
+export async function criarJogadorAtivo(criarJogador: Rota, aceitarConvite: Rota, mestre: Cliente, nome: string, senha = "senha-do-jogador-1") {
+  const c = await chamar(criarJogador, { corpo: { nome }, cliente: mestre });
+  if (c.status !== 201) throw new Error(`convite: ${c.status}`);
+  const ip = novoIp();
+  const a = await chamar(aceitarConvite, { corpo: { codigo: c.dados.codigo, senha }, cliente: { ip } });
+  if (a.status !== 200) throw new Error(`aceitar convite: ${a.status}`);
+  return { id: c.dados.id as string, codigo: c.dados.codigo as string, cliente: await clienteDe(a.setCookie, ip), senha };
 }

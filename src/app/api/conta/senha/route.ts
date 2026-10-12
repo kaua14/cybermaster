@@ -10,13 +10,14 @@ const Corpo = z.object({
 });
 
 // Só jogadores: a senha do mestre se troca pelo script de operação, nunca pela app.
-export const POST = rota({ acesso: "jogador", corpo: Corpo }, async ({ corpo, sessao }) => {
+export const POST = rota({ acesso: "jogador", corpo: Corpo, permitirTrocaPendente: true }, async ({ corpo, sessao }) => {
   const [p] = await db()`select password_hash from player where id = ${sessao.jogadorId}`;
   if (!(await conferirSenha(p?.password_hash, corpo.atual))) return json({ erro: "Senha atual incorreta." }, 400);
+  if (corpo.nova === corpo.atual) return json({ erro: "A senha nova precisa ser diferente da atual." }, 400);
 
   const novoHash = await hashSenha(corpo.nova);
   await db().begin(async (tx) => {
-    await tx`update player set password_hash = ${novoHash} where id = ${sessao.jogadorId}`;
+    await tx`update player set password_hash = ${novoHash}, must_change_password = false, password_expires_at = null where id = ${sessao.jogadorId}`;
     await tx`delete from session where player_id = ${sessao.jogadorId}`;
   });
   // Derruba as outras sessões e mantém esta aberta com um token novo.

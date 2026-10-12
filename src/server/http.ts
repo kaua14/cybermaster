@@ -51,7 +51,7 @@ const LIMITE_CORPO = 64 * 1024;
  * Toda rota da API passa por aqui.
  */
 export function rota<A extends Acesso, S extends ZodTypeAny | undefined = undefined>(
-  opcoes: { acesso: A; corpo?: S },
+  opcoes: { acesso: A; corpo?: S; permitirTrocaPendente?: boolean },
   fn: (ctx: Contexto<A, S extends ZodTypeAny ? z.infer<S> : undefined>) => Promise<Response>,
 ) {
   return async (req: Request, ctxNext?: { params?: Promise<Record<string, string>> }): Promise<Response> => {
@@ -69,6 +69,7 @@ export function rota<A extends Acesso, S extends ZodTypeAny | undefined = undefi
         if (mutacao && !iguais(req.headers.get("x-csrf-token") ?? "", sessao.csrf)) {
           throw new ErroHttp(403, "Token CSRF inválido. Recarregue a página.");
         }
+        if (sessao.trocarSenha && !opcoes.permitirTrocaPendente) throw new ErroHttp(403, "Troque a senha temporária primeiro.");
       }
 
       let corpo: unknown = undefined;

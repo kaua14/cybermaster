@@ -8,27 +8,13 @@ import { POST as aceitarConvite } from "@/app/api/auth/convite/route";
 import { POST as trocarSenha } from "@/app/api/conta/senha/route";
 import { GET as listarJogadores, POST as criarJogador } from "@/app/api/jogadores/route";
 import { POST as reconvidar } from "@/app/api/jogadores/[id]/convite/route";
-import { adminDb, chamar, clienteDe, definirSenhaMestre, novoIp, type Cliente } from "./helpers";
+import { adminDb, chamar, criarJogadorAtivo as criarJogadorAtivoBase, definirSenhaMestre, entrarComoMestre as entrarComoMestreBase, novoIp, type Cliente } from "./helpers";
 
-async function entrarComoMestre(): Promise<Cliente> {
-  const senha = await definirSenhaMestre();
-  const ip = novoIp();
-  const r = await chamar(login, { corpo: { modo: "mestre", senha }, cliente: { ip } });
-  expect(r.status).toBe(200);
-  return clienteDe(r.setCookie, ip);
-}
-
-async function criarJogadorAtivo(mestre: Cliente, nome: string, senha = "senha-do-jogador-1") {
-  const c = await chamar(criarJogador, { corpo: { nome }, cliente: mestre });
-  expect(c.status).toBe(201);
-  const ip = novoIp();
-  const a = await chamar(aceitarConvite, { corpo: { codigo: c.dados.codigo, senha }, cliente: { ip } });
-  expect(a.status).toBe(200);
-  return { id: c.dados.id as string, codigo: c.dados.codigo as string, cliente: await clienteDe(a.setCookie, ip), senha };
-}
+const entrarComoMestre = () => entrarComoMestreBase(login);
+const criarJogadorAtivo = (mestre: Cliente, nome: string, senha?: string) => criarJogadorAtivoBase(criarJogador, aceitarConvite, mestre, nome, senha);
 
 beforeEach(async () => {
-  await adminDb()`truncate player, invite, session, login_throttle, master_credential cascade`;
+  await adminDb()`truncate player, invite, session, login_throttle, master_credential, character, character_log cascade`;
 });
 afterAll(async () => {
   await adminDb().end();

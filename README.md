@@ -9,7 +9,7 @@ Hub para uma mesa de **Cyberpunk 2020** (edição Devir, PT-BR, 1996): fichas do
 | Etapa | Situação |
 |---|---|
 | 1. Esqueleto, banco, autenticação | pronta |
-| 2. Ficha na tela | a fazer |
+| 2. Ficha na tela | pronta |
 | 3. PDF editável | a fazer |
 | 4. Regras, NPCs e ganchos | a fazer |
 | 5. Assistente | a fazer |
@@ -69,7 +69,21 @@ O serviço `ops` só existe no perfil `ops`. Ele é o único, junto com `migrate
 2. O sistema mostra um código de uso único (vale 7 dias). Ele aparece só essa vez.
 3. O jogador abre **Primeiro acesso** na tela de login, digita o código e cria a própria senha (mínimo 10 caracteres).
 
-O jogador troca a senha em **Conta**. Se alguém esquecer a senha, o mestre clica em **Invalidar senha**: a senha antiga deixa de valer, o jogador sai de todas as sessões e um novo código é gerado. O mestre nunca vê senha nenhuma.
+O jogador troca a senha em **Conta**. Se alguém esquecer a senha, o mestre tem duas saídas em **Jogadores**:
+
+- **Senha temporária**: o sistema gera uma senha que o mestre passa ao jogador. Ela vale 24 horas e só serve para entrar e criar uma senha nova; até trocar, o jogador não vê mais nada.
+- **Invalidar senha**: a senha antiga deixa de valer e um novo código de convite é gerado.
+
+Nos dois casos o jogador sai de todas as sessões. O mestre nunca vê a senha que o jogador escolhe.
+
+## Fichas
+
+- Criação pelos três métodos do livro (aleatório, rápido e cinematográfico, este só para o mestre). O app não rola dados: o jogador rola na mesa e digita o resultado.
+- Contadores de pontos: atributos, 40 pontos de carreira nas Perícias Profissionais da classe e REF + INT pontos opcionais.
+- **Concluir criação** fixa atributos e pontos de perícia. Depois disso, o jogador só sobe perícias com PE. O mestre pode reabrir a criação.
+- **PE por perícia**, como no livro: o mestre dá PE na perícia usada (experiência, professor ou estudo até +2) e o jogador clica em **Subir** quando os PE acumulados pagam o próximo nível. Tudo vai para o histórico da ficha.
+- Trilha de ferimentos clicável com estado, efeitos em REF/INT/AuCon e os testes de atordoamento e morte já calculados.
+- Toda regra mostra a página do livro. As que não deu para confirmar aparecem com "conferir".
 
 ## Segurança
 

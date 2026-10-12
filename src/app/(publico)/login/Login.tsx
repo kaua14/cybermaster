@@ -17,10 +17,10 @@ export function Login() {
     e.preventDefault();
     setErro("");
     setOcupado(true);
-    const r = await api("POST", "/api/auth/login", modo === "mestre" ? { modo, senha } : { modo, nome, senha });
+    const r = await api<{ trocarSenha?: boolean }>("POST", "/api/auth/login", modo === "mestre" ? { modo, senha } : { modo, nome, senha });
     setOcupado(false);
     if (!r.ok) return setErro(r.erro);
-    router.replace("/");
+    router.replace(r.dados.trocarSenha ? "/conta" : "/");
     router.refresh();
   }
 

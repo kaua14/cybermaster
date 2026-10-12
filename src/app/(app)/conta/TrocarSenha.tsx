@@ -1,10 +1,12 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useApi } from "@/components/Api";
 import { Painel } from "@/components/Painel";
 
-export function TrocarSenha() {
+export function TrocarSenha({ temporaria }: { temporaria: boolean }) {
   const api = useApi();
+  const router = useRouter();
   const [atual, setAtual] = useState("");
   const [nova, setNova] = useState("");
   const [repete, setRepete] = useState("");
@@ -16,14 +18,24 @@ export function TrocarSenha() {
     const r = await api("POST", "/api/conta/senha", { atual, nova });
     if (!r.ok) return setMsg({ ok: false, texto: r.erro });
     setAtual(""); setNova(""); setRepete("");
+    if (temporaria) {
+      router.replace("/");
+      router.refresh();
+      return;
+    }
     setMsg({ ok: true, texto: "Senha trocada. As outras sessões foram encerradas." });
   }
 
   return (
     <Painel legenda="Trocar senha">
+      {temporaria && (
+        <div className="terminal" style={{ marginBottom: 18 }} role="alert">
+          Você entrou com uma senha temporária. Crie sua senha para continuar.
+        </div>
+      )}
       <form onSubmit={enviar} style={{ maxWidth: 420 }}>
         <div className="campo">
-          <label htmlFor="s-atual">Senha atual</label>
+          <label htmlFor="s-atual">{temporaria ? "Senha temporária" : "Senha atual"}</label>
           <input id="s-atual" type="password" value={atual} onChange={(e) => setAtual(e.target.value)} autoComplete="current-password" required />
         </div>
         <div className="campo">

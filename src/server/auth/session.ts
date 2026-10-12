@@ -2,8 +2,8 @@ import { db } from "@/server/db";
 import { sha256, tokenAleatorio } from "./tokens";
 
 export type Sessao =
-  | { tipo: "mestre"; csrf: string; jogadorId: null; nome: null }
-  | { tipo: "jogador"; csrf: string; jogadorId: string; nome: string };
+  | { tipo: "mestre"; csrf: string; jogadorId: null; nome: null; trocarSenha: false }
+  | { tipo: "jogador"; csrf: string; jogadorId: string; nome: string; trocarSenha: boolean };
 
 const DURACAO_DIAS = 7;
 
@@ -36,12 +36,12 @@ export async function criarSessao(tipo: "mestre" | "jogador", jogadorId: string 
 export async function lerSessao(token: string | undefined): Promise<Sessao | null> {
   if (!token || token.length > 100) return null;
   const [s] = await db()`
-    select s.kind, s.player_id, s.csrf_token, p.name
+    select s.kind, s.player_id, s.csrf_token, p.name, p.must_change_password
     from session s left join player p on p.id = s.player_id
     where s.token_hash = ${sha256(token)} and s.expires_at > now()`;
   if (!s) return null;
-  if (s.kind === "master") return { tipo: "mestre", csrf: s.csrf_token, jogadorId: null, nome: null };
-  return { tipo: "jogador", csrf: s.csrf_token, jogadorId: s.player_id, nome: s.name };
+  if (s.kind === "master") return { tipo: "mestre", csrf: s.csrf_token, jogadorId: null, nome: null, trocarSenha: false };
+  return { tipo: "jogador", csrf: s.csrf_token, jogadorId: s.player_id, nome: s.name, trocarSenha: s.must_change_password };
 }
 
 export async function encerrarSessao(token: string): Promise<void> {

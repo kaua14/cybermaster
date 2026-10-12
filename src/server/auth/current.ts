@@ -8,9 +8,11 @@ export async function sessaoAtual(): Promise<Sessao | null> {
   return lerSessao(jar.get(nomeCookie())?.value);
 }
 
-export async function exigirSessao(): Promise<Sessao> {
+/** Com senha temporária, o jogador só vê a tela de Conta até trocar a senha. */
+export async function exigirSessao(opcoes: { permitirTrocaPendente?: boolean } = {}): Promise<Sessao> {
   const s = await sessaoAtual();
   if (!s) redirect("/login");
+  if (s.trocarSenha && !opcoes.permitirTrocaPendente) redirect("/conta");
   return s;
 }
 

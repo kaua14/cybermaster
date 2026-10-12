@@ -7,8 +7,9 @@ import { exigirSessao } from "@/server/auth/current";
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const s = await exigirSessao();
-  const itens = [{ href: "/", rotulo: "Fichas" }];
+  // Cada página confere a sessão de novo; aqui só monta a moldura.
+  const s = await exigirSessao({ permitirTrocaPendente: true });
+  const itens = s.trocarSenha ? [] : [{ href: "/", rotulo: "Fichas" }];
   if (s.tipo === "mestre") itens.push({ href: "/jogadores", rotulo: "Jogadores" });
   itens.push({ href: "/conta", rotulo: "Conta" });
 

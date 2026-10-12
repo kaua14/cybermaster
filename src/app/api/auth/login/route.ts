@@ -27,12 +27,17 @@ export const POST = rota({ acesso: "publico", corpo: Corpo }, async ({ corpo, ip
     return json({ ok: true, tipo: "mestre" }, 200, { "set-cookie": cookieSessao(await criarSessao("mestre", null)) });
   }
 
-  const [jogador] = await db()`select id, password_hash from player where lower(name) = lower(${corpo.nome})`;
-  // Mesma resposta para nome inexistente, convite pendente e senha errada.
-  if (!(await conferirSenha(jogador?.password_hash, corpo.senha))) {
+  const [jogador] = await db()`
+    select id, password_hash, must_change_password, (password_expires_at is not null and password_expires_at < now()) as vencida
+    from player where lower(name) = lower(${corpo.nome})`;
+  // Mesma resposta para nome inexistente, convite pendente, senha temporária vencida e senha errada.
+  const confere = await conferirSenha(jogador?.password_hash, corpo.senha);
+  if (!confere || jogador.vencida) {
     await registrarFalha(chaves);
     return json({ erro: "Nome ou senha incorretos." }, 401);
   }
   await limparFalhas(chaves.slice(1));
-  return json({ ok: true, tipo: "jogador" }, 200, { "set-cookie": cookieSessao(await criarSessao("jogador", jogador.id)) });
+  return json({ ok: true, tipo: "jogador", trocarSenha: jogador.must_change_password }, 200, {
+    "set-cookie": cookieSessao(await criarSessao("jogador", jogador.id)),
+  });
 });

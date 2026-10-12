@@ -6,6 +6,7 @@ import { json, rota } from "@/server/http";
 export const GET = rota({ acesso: "mestre" }, async () => {
   const jogadores = await db()`
     select p.id, p.name as nome, p.created_at as criado, (p.password_hash is not null) as ativo,
+           case when p.must_change_password then p.password_expires_at end as temporaria_expira,
            (select max(expires_at) from invite i where i.player_id = p.id and i.used_at is null and i.expires_at > now()) as convite_expira
     from player p order by lower(p.name)`;
   return json({ jogadores });

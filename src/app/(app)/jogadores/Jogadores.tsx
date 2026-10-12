@@ -3,10 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useApi } from "@/components/Api";
 import { Painel } from "@/components/Painel";
 
-type Jogador = { id: string; nome: string; ativo: boolean; convite_expira: string | null };
-type Convite = { nome: string; codigo: string; expira: string };
+type Jogador = { id: string; nome: string; ativo: boolean; convite_expira: string | null; temporaria_expira: string | null };
+type Convite = { nome: string; codigo: string; expira: string; tipo: "convite" | "temporaria" };
 
 const data = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+const dataHora = (s: string) => new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
 export function Jogadores() {
   const api = useApi();
@@ -33,7 +34,7 @@ export function Jogadores() {
     const r = await api<{ codigo: string; expira: string }>("POST", "/api/jogadores", { nome });
     setOcupado(false);
     if (!r.ok) return setErro(r.erro);
-    setConvite({ nome: nome.trim(), ...r.dados });
+    setConvite({ nome: nome.trim(), ...r.dados, tipo: "convite" });
     setNome("");
     carregar();
   }
@@ -46,7 +47,16 @@ export function Jogadores() {
     setErro("");
     const r = await api<{ codigo: string; expira: string }>("POST", `/api/jogadores/${j.id}/convite`);
     if (!r.ok) return setErro(r.erro);
-    setConvite({ nome: j.nome, ...r.dados });
+    setConvite({ nome: j.nome, ...r.dados, tipo: "convite" });
+    carregar();
+  }
+
+  async function temporaria(j: Jogador) {
+    if (!confirm(`Trocar a senha de ${j.nome} por uma temporária? Ele sai de todas as sessões e cria uma senha nova no próximo login.`)) return;
+    setErro("");
+    const r = await api<{ senha: string; expira: string }>("POST", `/api/jogadores/${j.id}/senha-temporaria`);
+    if (!r.ok) return setErro(r.erro);
+    setConvite({ nome: j.nome, codigo: r.dados.senha, expira: r.dados.expira, tipo: "temporaria" });
     carregar();
   }
 
@@ -63,11 +73,13 @@ export function Jogadores() {
         {erro && <p className="erro" role="alert">{erro}</p>}
         {convite && (
           <div className="espaco">
-            <div className="card-titulo" style={{ marginTop: 0 }}>Código de {convite.nome}</div>
+            <div className="card-titulo" style={{ marginTop: 0 }}>{convite.tipo === "convite" ? "Código" : "Senha temporária"} de {convite.nome}</div>
             <div className="terminal">
               <span className="codigo">{convite.codigo}</span>
-              {"\n"}Vale até {data(convite.expira)}, uma vez só. Ele entra em “Primeiro acesso” na tela de login.
-              {"\n"}Anote agora: o código não aparece de novo.
+              {convite.tipo === "convite"
+                ? `\nVale até ${data(convite.expira)}, uma vez só. Ele entra em “Primeiro acesso” na tela de login.`
+                : `\nVale até ${dataHora(convite.expira)}. Ele entra com o nome e esta senha e cria uma senha nova na hora.`}
+              {"\n"}Anote agora: não aparece de novo.
             </div>
           </div>
         )}
@@ -89,7 +101,9 @@ export function Jogadores() {
                   <tr key={j.id}>
                     <td>{j.nome}</td>
                     <td>
-                      {j.ativo ? (
+                      {j.temporaria_expira ? (
+                        <span className="etiqueta cinza">Temporária até {dataHora(j.temporaria_expira)}</span>
+                      ) : j.ativo ? (
                         <span className="etiqueta ouro">Senha criada</span>
                       ) : j.convite_expira ? (
                         <span className="etiqueta cinza">Convite até {data(j.convite_expira)}</span>
@@ -98,9 +112,12 @@ export function Jogadores() {
                       )}
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button className={j.ativo ? "btn btn-perigo" : "btn"} onClick={() => novoConvite(j)}>
-                        {j.ativo ? "Invalidar senha" : "Novo convite"}
-                      </button>
+                      <div className="linha" style={{ justifyContent: "flex-end" }}>
+                        <button className="btn btn-p" onClick={() => temporaria(j)}>Senha temporária</button>
+                        <button className={j.ativo ? "btn btn-perigo btn-p" : "btn btn-p"} onClick={() => novoConvite(j)}>
+                          {j.ativo ? "Invalidar senha" : "Novo convite"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
